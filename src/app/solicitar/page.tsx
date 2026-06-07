@@ -1,0 +1,325 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
+type Category = {
+  id: number;
+  name: string;
+  icon: string;
+};
+
+type Service = {
+  id: number;
+  name: string;
+  category_id: number;
+};
+
+export default function SolicitarPage() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [filteredServices, setFilteredServices] = useState<Service[]>([]);
+
+  // Campos do formulário
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedService, setSelectedService] = useState<number | null>(null);
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
+  const [period, setPeriod] = useState("manha");
+
+  useEffect(() => {
+    async function load() {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push("/login");
+        return;
+      }
+
+      // Busca categorias e serviços
+      const { data: cats } = await supabase
+        .from("categories")
+        .select("*")
+        .order("name");
+
+      const { data: servs } = await supabase
+        .from("services")
+        .select("*")
+        .order("name");
+
+      setCategories(cats ?? []);
+      setServices(servs ?? []);
+      setLoading(false);
+    }
+
+    load();
+  }, [router]);
+
+  // Filtra serviços quando categoria muda
+  useEffect(() => {
+    if (!selectedCategory) {
+      setFilteredServices([]);
+      setSelectedService(null);
+      return;
+    }
+
+    const filtered = services.filter(
+      (s) => s.category_id === selectedCategory
+    );
+    setFilteredServices(filtered);
+    setSelectedService(null);
+  }, [selectedCategory, services]);
+
+  async function handleSubmit() {
+    if (!selectedCategory || !selectedService || !description || !date) {
+      alert("Preencha todos os campos antes de enviar.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("service_requests")
+      .insert({
+        client_id: session.user.id,
+        category_id: selectedCategory,
+        service_id: selectedService,
+        description,
+        scheduled_date: date,
+        period,
+      });
+
+    if (error) {
+      alert("Erro ao enviar solicitação: " + error.message);
+      setSubmitting(false);
+      return;
+    }
+
+    setSuccess(true);
+    setSubmitting(false);
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#020817] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-slate-400 text-sm">Carregando...</span>
+        </div>
+      </main>
+    );
+  }
+
+  // Tela de sucesso
+  if (success) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#020817] text-white px-6">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="text-6xl">🎉</div>
+          <h1 className="text-4xl font-black text-white">
+            Solicitação enviada!
+          </h1>
+          <p className="text-slate-400 text-lg">
+            Profissionais da sua área serão notificados e entrarão em contato em breve.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="w-full bg-cyan-600 hover:bg-cyan-500 transition py-3 rounded-xl font-bold text-white"
+            >
+              Ir para o Dashboard
+            </button>
+            <button
+              onClick={() => {
+                setSuccess(false);
+                setSelectedCategory(null);
+                setSelectedService(null);
+                setDescription("");
+                setDate("");
+                setPeriod("manha");
+              }}
+              className="w-full border border-slate-700 hover:bg-slate-800 transition py-3 rounded-xl text-slate-300"
+            >
+              Fazer outra solicitação
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#020817] text-white">
+      <div className="max-w-3xl mx-auto px-6 py-12 space-y-8">
+
+        {/* Cabeçalho */}
+        <div>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="text-slate-500 hover:text-slate-300 transition text-sm mb-6 flex items-center gap-2"
+          >
+            ← Voltar ao dashboard
+          </button>
+          <h1 className="text-5xl font-black text-white">
+            Solicitar Serviço
+          </h1>
+          <p className="text-slate-400 mt-2 text-lg">
+            Descreva o que você precisa e profissionais entrarão em contato
+          </p>
+        </div>
+
+        {/* Passo 1 — Categoria */}
+        <div className="bg-slate-800 border border-slate-700 rounded-3xl p-8 space-y-4">
+          <div>
+            <span className="text-cyan-400 text-sm font-bold">PASSO 1</span>
+            <h2 className="text-2xl font-black text-white mt-1">
+              Qual categoria de serviço?
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {categories.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 border transition text-left ${
+                    isSelected
+                      ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-400"
+                      : "bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500"
+                  }`}
+                >
+                  <span className="text-xl">{cat.icon}</span>
+                  <span className="text-sm font-semibold">{cat.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Passo 2 — Serviço específico */}
+        {selectedCategory && (
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-8 space-y-4">
+            <div>
+              <span className="text-cyan-400 text-sm font-bold">PASSO 2</span>
+              <h2 className="text-2xl font-black text-white mt-1">
+                Qual serviço específico?
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {filteredServices.map((serv) => {
+                const isSelected = selectedService === serv.id;
+                return (
+                  <button
+                    key={serv.id}
+                    onClick={() => setSelectedService(serv.id)}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 border transition text-left ${
+                      isSelected
+                        ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-400"
+                        : "bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">{serv.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Passo 3 — Descrição e data */}
+        {selectedService && (
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-8 space-y-6">
+            <div>
+              <span className="text-cyan-400 text-sm font-bold">PASSO 3</span>
+              <h2 className="text-2xl font-black text-white mt-1">
+                Detalhes do serviço
+              </h2>
+            </div>
+
+            {/* Descrição */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Descreva o problema ou serviço necessário
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: Preciso instalar 3 tomadas novas na sala e trocar um disjuntor..."
+                rows={4}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition resize-none"
+              />
+            </div>
+
+            {/* Data */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Data preferencial
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition"
+              />
+            </div>
+
+            {/* Período */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Período preferencial
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "manha", label: "☀️ Manhã" },
+                  { value: "tarde", label: "🌤️ Tarde" },
+                  { value: "noite", label: "🌙 Noite" },
+                ].map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => setPeriod(p.value)}
+                    className={`py-3 rounded-xl border font-semibold transition ${
+                      period === p.value
+                        ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-400"
+                        : "bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Botão enviar */}
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 transition py-4 rounded-xl font-black text-white text-lg"
+            >
+              {submitting ? "Enviando..." : "🚀 Solicitar Serviço"}
+            </button>
+
+          </div>
+        )}
+
+      </div>
+    </main>
+  );
+}
