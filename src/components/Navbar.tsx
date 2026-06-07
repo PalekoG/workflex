@@ -64,6 +64,7 @@ export function Navbar() {
 
   const initials = getInitials(profile?.name);
   const firstName = profile?.name?.split(" ")[0] ?? "Usuário";
+  const isProfessional = profile?.role === "professional";
 
   return (
     <header className="w-full border-b border-slate-800 bg-slate-950 sticky top-0 z-50">
@@ -83,12 +84,26 @@ export function Navbar() {
 
             {profile ? (
               <>
-                {/* Botão de ação principal */}
-                <Link href="/solicitar">
-                  <button className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-sm font-semibold transition">
-                    Solicitar Serviço
-                  </button>
-                </Link>
+                {isProfessional ? (
+                  <Link href="/dashboard/servicos">
+                    <button className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-sm font-semibold transition">
+                      🔧 Meus Serviços
+                    </button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/dashboard/chamados">
+                      <button className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-sm font-semibold transition">
+                        📋 Meus Chamados
+                      </button>
+                    </Link>
+                    <Link href="/solicitar">
+                      <button className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-sm font-semibold transition">
+                        Solicitar Serviço
+                      </button>
+                    </Link>
+                  </>
+                )}
 
                 {/* Avatar + Dropdown */}
                 <div className="relative">
@@ -109,7 +124,7 @@ export function Navbar() {
                       <div className="px-3 py-2 mb-1 border-b border-slate-700">
                         <p className="text-white font-semibold text-sm">{profile.name}</p>
                         <p className="text-slate-400 text-xs">
-                          {profile.role === "professional" ? "✦ Profissional" : "◈ Cliente"}
+                          {isProfessional ? "✦ Profissional" : "◈ Cliente"}
                         </p>
                       </div>
 
@@ -130,6 +145,28 @@ export function Navbar() {
                           👤 Meu Perfil
                         </button>
                       </Link>
+
+                      {!isProfessional && (
+                        <Link href="/dashboard/chamados">
+                          <button
+                            onClick={() => setUserMenuOpen(false)}
+                            className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-xl transition"
+                          >
+                            📋 Meus Chamados
+                          </button>
+                        </Link>
+                      )}
+
+                      {isProfessional && (
+                        <Link href="/dashboard/servicos">
+                          <button
+                            onClick={() => setUserMenuOpen(false)}
+                            className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-xl transition"
+                          >
+                            🔧 Meus Serviços
+                          </button>
+                        </Link>
+                      )}
 
                       <Link href="/dashboard/financeiro">
                         <button
@@ -203,22 +240,37 @@ export function Navbar() {
                 <div>
                   <p className="text-white font-semibold text-sm">{profile.name}</p>
                   <p className="text-slate-400 text-xs">
-                    {profile.role === "professional" ? "Profissional" : "Cliente"}
+                    {isProfessional ? "Profissional" : "Cliente"}
                   </p>
                 </div>
               </div>
-
-              <Link href="/solicitar">
-                <button className="w-full px-4 py-3 rounded-xl bg-cyan-600 text-sm font-semibold text-left">
-                  Solicitar Serviço
-                </button>
-              </Link>
 
               <Link href="/dashboard">
                 <button className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-left">
                   🏠 Dashboard
                 </button>
               </Link>
+
+              {isProfessional ? (
+                <Link href="/dashboard/servicos">
+                  <button className="w-full px-4 py-3 rounded-xl bg-cyan-600 text-sm font-semibold text-left">
+                    🔧 Meus Serviços
+                  </button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/dashboard/chamados">
+                    <button className="w-full px-4 py-3 rounded-xl bg-violet-600 text-sm font-semibold text-left">
+                      📋 Meus Chamados
+                    </button>
+                  </Link>
+                  <Link href="/solicitar">
+                    <button className="w-full px-4 py-3 rounded-xl bg-cyan-600 text-sm font-semibold text-left">
+                      Solicitar Serviço
+                    </button>
+                  </Link>
+                </>
+              )}
 
               <Link href="/dashboard/perfil">
                 <button className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-left">
@@ -229,12 +281,6 @@ export function Navbar() {
               <Link href="/dashboard/financeiro">
                 <button className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-left">
                   💰 Financeiro
-                </button>
-              </Link>
-
-              <Link href="/dashboard/agendamentos">
-                <button className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-left">
-                  📅 Agendamentos
                 </button>
               </Link>
 
