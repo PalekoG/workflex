@@ -13,6 +13,12 @@ type Profile = {
   phone: string | null;
 };
 
+type Category = {
+  id: number;
+  name: string;
+  icon: string;
+};
+
 export default function PerfilPage() {
   const router = useRouter();
 
@@ -27,8 +33,12 @@ export default function PerfilPage() {
   const [bio, setBio] = useState("");
   const [phone, setPhone] = useState("");
 
+  // Categorias
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+
   useEffect(() => {
-    async function loadProfile() {
+    async function load() {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
@@ -36,7 +46,8 @@ export default function PerfilPage() {
         return;
       }
 
-      const { data, error } = await supabase
+      // Busca perfil
+      const { data: profileData, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
@@ -48,17 +59,41 @@ export default function PerfilPage() {
         return;
       }
 
-      // Popula os campos com os dados atuais
-      setProfile(data);
-      setName(data.name ?? "");
-      setRole(data.role ?? "client");
-      setBio(data.bio ?? "");
-      setPhone(data.phone ?? "");
+      setProfile(profileData);
+      setName(profileData.name ?? "");
+      setRole(profileData.role ?? "client");
+      setBio(profileData.bio ?? "");
+      setPhone(profileData.phone ?? "");
+
+      // Busca todas as categorias
+      const { data: cats } = await supabase
+        .from("categories")
+        .select("id, name, icon")
+        .order("name");
+
+      setAllCategories(cats ?? []);
+
+      // Busca categorias já selecionadas pelo profissional
+      const { data: selected } = await supabase
+        .from("profile_categories")
+        .select("category_id")
+        .eq("profile_id", session.user.id);
+
+      setSelectedCategories(selected?.map((s) => s.category_id) ?? []);
       setLoading(false);
     }
 
-    loadProfile();
+    load();
   }, [router]);
+
+  // Alterna seleção de categoria
+  function toggleCategory(id: number) {
+    setSelectedCategories((prev) =>
+      prev.includes(id)
+        ? prev.filter((c) => c !== id)  // remove se já estava
+        : [...prev, id]                  // adiciona se não estava
+    );
+  }
 
   async function handleSave() {
     if (!profile) return;
@@ -66,26 +101,47 @@ export default function PerfilPage() {
     setSaving(true);
     setSuccess(false);
 
-    const { error } = await supabase
+    // 1 — Salva dados do perfil
+    const { error: profileError } = await supabase
       .from("profiles")
-      .update({
-        name,
-        role,
-        bio,
-        phone,
-      })
+      .update({ name, role, bio, phone })
       .eq("id", profile.id);
 
-    if (error) {
-      alert("Erro ao salvar: " + error.message);
+    if (profileError) {
+      alert("Erro ao salvar perfil: " + profileError.message);
       setSaving(false);
       return;
     }
 
+    // 2 — Salva categorias (só se for profissional)
+    if (role === "professional") {
+      // Remove todas as categorias antigas
+      await supabase
+        .from("profile_categories")
+        .delete()
+        .eq("profile_id", profile.id);
+
+      // Insere as novas selecionadas
+      if (selectedCategories.length > 0) {
+        const inserts = selectedCategories.map((category_id) => ({
+          profile_id: profile.id,
+          category_id,
+        }));
+
+        const { error: catError } = await supabase
+          .from("profile_categories")
+          .insert(inserts);
+
+        if (catError) {
+          alert("Erro ao salvar categorias: " + catError.message);
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
     setSaving(false);
     setSuccess(true);
-
-    // Some com o feedback depois de 3 segundos
     setTimeout(() => setSuccess(false), 3000);
   }
 
@@ -103,8 +159,8 @@ export default function PerfilPage() {
   return (
     <main className="min-h-screen bg-[#020817] text-white flex">
 
-      {/* Sidebar simples — sem logout por enquanto */}
-      <aside className="w-70 min-h-screen bg-[#020817] border-r border-slate-800 p-6 flex flex-col">
+      {/* Sidebar */}
+      <aside className="w-[280px] min-h-screen bg-[#020817] border-r border-slate-800 p-6 flex flex-col">
         <div className="mb-12">
           <h1 className="text-4xl font-black text-cyan-400">WorkFlex</h1>
           <p className="text-slate-500 mt-1">Plataforma inteligente</p>
@@ -153,8 +209,8 @@ export default function PerfilPage() {
             <p className="text-slate-400 mt-1">Atualize suas informações pessoais</p>
           </div>
 
-          {/* Formulário */}
-          <div className="bg-slate-800 border border-slate-700 rounded-4x1 p-8 space-y-6">
+          {/* Formulário principal */}
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-8 space-y-6">
 
             {/* Nome */}
             <div>
@@ -216,7 +272,7 @@ export default function PerfilPage() {
             {/* Telefone */}
             <div>
               <label className="block text-sm font-semibold text-slate-300 mb-2">
-                Telefone
+                Telefone / WhatsApp
               </label>
               <input
                 type="tel"
@@ -227,24 +283,68 @@ export default function PerfilPage() {
               />
             </div>
 
-            {/* Botão salvar */}
-            <div className="flex items-center gap-4 pt-2">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 transition px-8 py-3 rounded-xl font-bold text-white"
-              >
-                {saving ? "Salvando..." : "Salvar alterações"}
-              </button>
+          </div>
 
-              {/* Feedback de sucesso */}
-              {success && (
-                <span className="text-green-400 font-semibold text-sm">
-                  ✅ Perfil atualizado com sucesso!
-                </span>
-              )}
+          {/* Seção de categorias — só aparece para profissionais */}
+          {role === "professional" && (
+            <div className="bg-slate-800 border border-slate-700 rounded-3xl p-8 space-y-4">
+
+              <div>
+                <h2 className="text-xl font-black text-white">
+                  Áreas de atuação
+                </h2>
+                <p className="text-slate-400 text-sm mt-1">
+                  Selecione todas as categorias em que você presta serviço
+                </p>
+              </div>
+
+              {/* Grid de categorias */}
+              <div className="grid grid-cols-2 gap-3">
+                {allCategories.map((cat) => {
+                  const isSelected = selectedCategories.includes(cat.id);
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleCategory(cat.id)}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3 border transition text-left ${
+                        isSelected
+                          ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-400"
+                          : "bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500"
+                      }`}
+                    >
+                      <span className="text-xl">{cat.icon}</span>
+                      <span className="text-sm font-semibold">{cat.name}</span>
+                      {isSelected && (
+                        <span className="ml-auto text-cyan-400 text-xs">✓</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Contador de selecionadas */}
+              <p className="text-slate-500 text-sm">
+                {selectedCategories.length} categoria(s) selecionada(s)
+              </p>
+
             </div>
+          )}
 
+          {/* Botão salvar */}
+          <div className="flex items-center gap-4 pb-8">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 transition px-8 py-3 rounded-xl font-bold text-white"
+            >
+              {saving ? "Salvando..." : "Salvar alterações"}
+            </button>
+
+            {success && (
+              <span className="text-green-400 font-semibold text-sm">
+                ✅ Perfil atualizado com sucesso!
+              </span>
+            )}
           </div>
 
         </div>
