@@ -151,6 +151,7 @@ export default function DashboardPage() {
           <ProfileCard
             name={profile?.name}
             email={profile?.email}
+            phone={profile?.phone}
             role={profile?.role}
           />
 
@@ -233,7 +234,7 @@ export default function DashboardPage() {
                         <div className="flex flex-col items-end gap-2 flex-shrink-0">
                           {req.profiles?.phone ? (
                             <a
-                              href={`https://wa.me/55${req.profiles.phone.replace(/\D/g, "")}?text=Olá! Vi sua solicitação no WorkFlex sobre "${req.services?.name}" e tenho interesse em ajudar.`}
+                              href={`https://wa.me/55${req.profiles.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Vi sua solicitação no WorkFlex sobre "${req.services?.name ?? 'serviço'}" e tenho interesse em ajudar.`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-2 rounded-xl text-sm font-bold transition"
