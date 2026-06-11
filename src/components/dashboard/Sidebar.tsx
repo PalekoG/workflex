@@ -10,7 +10,7 @@ export function Sidebar({ onSignOut }: SidebarProps) {
   const router = useRouter();
 
   return (
-    <aside className="w-70 min-h-screen bg-[#020817] border-r border-slate-800 p-6 flex flex-col">
+    <aside className="w-[280px] min-h-screen bg-[#020817] border-r border-slate-800 p-6 flex flex-col">
 
       <div className="mb-12">
         <h1 className="text-4xl font-black text-cyan-400">WorkFlex</h1>
@@ -24,16 +24,25 @@ export function Sidebar({ onSignOut }: SidebarProps) {
         >
           Dashboard
         </button>
-        <button className="w-full hover:bg-slate-800 transition rounded-2xl px-5 py-4 text-left text-slate-300">
+        <button
+          onClick={() => router.push("/dashboard/servicos")}
+          className="w-full hover:bg-slate-800 transition rounded-2xl px-5 py-4 text-left text-slate-300"
+        >
           Serviços
         </button>
         <button className="w-full hover:bg-slate-800 transition rounded-2xl px-5 py-4 text-left text-slate-300">
           Clientes
         </button>
-        <button className="w-full hover:bg-slate-800 transition rounded-2xl px-5 py-4 text-left text-slate-300">
+        <button
+          onClick={() => router.push("/dashboard/agendamentos")}
+          className="w-full hover:bg-slate-800 transition rounded-2xl px-5 py-4 text-left text-slate-300"
+        >
           Agendamentos
         </button>
-        <button className="w-full hover:bg-slate-800 transition rounded-2xl px-5 py-4 text-left text-slate-300">
+        <button
+          onClick={() => router.push("/dashboard/financeiro")}
+          className="w-full hover:bg-slate-800 transition rounded-2xl px-5 py-4 text-left text-slate-300"
+        >
           Financeiro
         </button>
         <button

@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+type Proposal = {
+  id: string;
+  price: number;
+  message: string | null;
+  status: string;
+  profiles: { name: string | null };
+};
+
 type ServiceRequest = {
   id: string;
   description: string;
@@ -15,6 +23,7 @@ type ServiceRequest = {
   open_to_proposals: boolean;
   categories: { name: string; icon: string };
   services: { name: string };
+  proposals: Proposal[];
 };
 
 type Tab = "pending" | "accepted" | "completed" | "cancelled";
@@ -72,6 +81,7 @@ export default function ChamadosPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [acceptingProposal, setAcceptingProposal] = useState<string | null>(null);
 
   async function loadRequests() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -93,7 +103,14 @@ export default function ChamadosPage() {
         suggested_price,
         open_to_proposals,
         categories ( name, icon ),
-        services ( name )
+        services ( name ),
+        proposals (
+          id,
+          price,
+          message,
+          status,
+          profiles ( name )
+        )
       `)
       .eq("client_id", session.user.id)
       .order("created_at", { ascending: false });
@@ -116,7 +133,7 @@ export default function ChamadosPage() {
       .from("service_requests")
       .update({ status: "cancelled" })
       .eq("id", id)
-      .eq("status", "pending"); // só cancela se ainda estiver pendente
+      .eq("status", "pending");
 
     if (error) {
       alert("Erro ao cancelar: " + error.message);
@@ -126,6 +143,29 @@ export default function ChamadosPage() {
 
     await loadRequests();
     setCancelling(null);
+  }
+
+  async function handleAcceptProposal(proposalId: string, requestId: string) {
+    setAcceptingProposal(proposalId);
+
+    await supabase
+      .from("proposals")
+      .update({ status: "accepted" })
+      .eq("id", proposalId);
+
+    await supabase
+      .from("proposals")
+      .update({ status: "rejected" })
+      .eq("request_id", requestId)
+      .neq("id", proposalId);
+
+    await supabase
+      .from("service_requests")
+      .update({ status: "accepted" })
+      .eq("id", requestId);
+
+    setAcceptingProposal(null);
+    await loadRequests();
   }
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
@@ -196,7 +236,7 @@ export default function ChamadosPage() {
           })}
         </div>
 
-        {/* Lista de chamados */}
+        {/* Lista */}
         {filtered.length === 0 ? (
           <div className="text-center py-16 bg-slate-800 border border-slate-700 rounded-3xl">
             <p className="text-4xl mb-3">🔍</p>
@@ -217,7 +257,7 @@ export default function ChamadosPage() {
             {filtered.map((req) => (
               <div
                 key={req.id}
-                className="bg-slate-800 border border-slate-700 hover:border-slate-500 transition rounded-3xl p-6 space-y-4"
+                className="bg-slate-800 border border-slate-700 rounded-3xl p-6 space-y-4"
               >
                 {/* Topo */}
                 <div className="flex items-start justify-between gap-4">
@@ -250,12 +290,51 @@ export default function ChamadosPage() {
                   ) : (
                     <span>📩 Aberto a propostas</span>
                   )}
-                  <span>
-                    Aberto em {new Date(req.created_at).toLocaleDateString("pt-BR")}
-                  </span>
                 </div>
 
-                {/* Botão cancelar — só em chamados pendentes */}
+                {/* Propostas recebidas — só em chamados abertos */}
+                {req.status === "pending" && req.proposals.length > 0 && (
+                  <div className="border-t border-slate-700 pt-4 space-y-3">
+                    <p className="text-slate-400 text-sm font-semibold">
+                      💬 {req.proposals.length} proposta(s) recebida(s)
+                    </p>
+                    {req.proposals
+                      .filter((p) => p.status === "pending")
+                      .map((proposal) => (
+                        <div
+                          key={proposal.id}
+                          className="bg-slate-900 border border-slate-700 rounded-2xl p-4 flex items-center justify-between gap-4"
+                        >
+                          <div className="space-y-1">
+                            <p className="text-white font-bold text-sm">
+                              👤 {proposal.profiles?.name ?? "Profissional"}
+                            </p>
+                            {proposal.message && (
+                              <p className="text-slate-400 text-xs">
+                                {proposal.message}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-green-400 font-black text-lg">
+                              R$ {proposal.price.toFixed(2)}
+                            </span>
+                            <button
+                              onClick={() => handleAcceptProposal(proposal.id, req.id)}
+                              disabled={acceptingProposal === proposal.id}
+                              className="bg-green-600 hover:bg-green-500 disabled:opacity-50 transition px-4 py-2 rounded-xl text-sm font-bold text-white"
+                            >
+                              {acceptingProposal === proposal.id
+                                ? "Aceitando..."
+                                : "✓ Aceitar"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {/* Cancelar — só em abertos */}
                 {req.status === "pending" && (
                   <div className="pt-2 border-t border-slate-700">
                     <button
