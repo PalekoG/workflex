@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛠️ WorkFlex
 
-## Getting Started
+> Uma plataforma desburocratizada para conectar clientes e profissionais autônomos de forma direta, ágil e transparente.
 
-First, run the development server:
+O **WorkFlex** nasceu com o objetivo de eliminar as barreiras na contratação de prestadores de serviço (como técnicos, eletricistas, encanadores, etc.). Inspirado em plataformas de mercado, o diferencial do WorkFlex é dar autonomia total para o cliente e o profissional negociarem diretamente, garantindo segurança através de um sistema de avaliações mútuas.
 
+## ✨ Funcionalidades Principais
+
+* **🗣️ Contato Direto e Autônomo:** O cliente pesquisa o profissional desejado e inicia a conversa sem burocracias ou intermediários bloqueando o contato.
+* **🤝 Sistema de Negociação:** Ferramenta integrada onde cliente e profissional podem enviar propostas e contrapropostas de valores até fecharem um acordo justo para ambos.
+* **⭐ Avaliação Bilateral:** Para garantir um ecossistema seguro, tanto o cliente avalia o profissional quanto o profissional avalia o cliente após a conclusão do serviço.
+
+## 🚀 Roadmap (Próximos Passos)
+
+O projeto está em constante evolução. As próximas implementações incluem:
+- [ ] **Perfil Premium para Profissionais:** Sistema de assinatura onde o técnico ganha destaque nas buscas e prioridade/agilidade ao receber novas demandas de clientes.
+- [ ] [Outra funcionalidade que você planeja, ex: Integração com meios de pagamento]
+- [ ] [Outra funcionalidade, ex: Chat em tempo real]
+
+## 💻 Tecnologias Utilizadas
+
+* **Front-end:** [Ex: React, Vue, HTML/CSS/JS]
+* **Back-end:** [Ex: Node.js, Python, Java, PHP]
+* **Banco de Dados:** [Ex: PostgreSQL, MongoDB, MySQL]
+* **Outros:** [Ex: Docker, Ferramentas de Design, etc.]
+
+## 📸 Demonstração
+
+*(Adicione aqui alguns prints da tela do seu sistema ou um GIF mostrando ele funcionando. Exemplo de como colocar a imagem abaixo:)*
+![Demonstração do WorkFlex](link-da-imagem-ou-gif-aqui)
+
+## ⚙️ Como executar o projeto localmente
+
+Pré-requisitos: Ter o [Ferramenta necessária, ex: Node.js e Git] instalado na sua máquina.
+
+1. Clone este repositório:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   git clone [https://github.com/SeuUsuario/WorkFlex.git](https://github.com/SeuUsuario/WorkFlex.git)
